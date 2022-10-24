@@ -22,14 +22,10 @@ public:
     void onMouseEvents(wxMouseEvent &event);
 
     vsg::ref_ptr<vsg::WindowTraits> traits;
-    vsg::ref_ptr<vsg::Instance> instance;
     vsg::ref_ptr<vsg::Viewer> viewer;
-    vsg::ref_ptr<vsg::Window> windowAdapter;
+    vsg::ref_ptr<vsg::Window> window;
 
 wxDECLARE_EVENT_TABLE();
-
-private:
-    bool _initialized = false;
 };
 
 BEGIN_EVENT_TABLE(wxViewerWindow, wxWindow)
@@ -43,23 +39,21 @@ wxViewerWindow::wxViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY) {
 wxViewerWindow::~wxViewerWindow() noexcept {}
 
 void wxViewerWindow::initialize(uint32_t width, uint32_t height) {
-    _initialized = true;
+    auto gtkWidget = GetHandle();
 
-    auto widget = GetHandle();
-    gtk_widget_realize(widget);
+    gtk_widget_realize(gtkWidget);
 
-    auto window = gtk_widget_get_window(widget);
-    auto native = gdk_x11_window_get_xid(window);
+    auto gtkWindow = gtk_widget_get_window(gtkWidget);
+    auto native = gdk_x11_window_get_xid(gtkWindow);
 
     traits = vsg::WindowTraits::create();
     traits->nativeWindow = static_cast<xcb_window_t>(native);
     traits->width = width;
     traits->height = height;
 
-    windowAdapter = vsg::Window::create(traits);
-
+    window = vsg::Window::create(traits);
     viewer = vsg::Viewer::create();
-    viewer->addWindow(windowAdapter);
+    viewer->addWindow(window);
 
     auto vsg_scene = vsg::read_cast<vsg::Node>("../models/glider.vsgt");
     if (!vsg_scene) {
@@ -78,12 +72,12 @@ void wxViewerWindow::initialize(uint32_t width, uint32_t height) {
             static_cast<double>(height),
             nearFarRatio * radius, radius * 4.5);
 
-    auto camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(windowAdapter->extent2D()));
+    auto camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 
     vsg::ref_ptr<vsg::EllipsoidModel> ellipsoidModel(vsg_scene->getObject<vsg::EllipsoidModel>("EllipsoidModel"));
     viewer->addEventHandler(vsg::Trackball::create(camera, ellipsoidModel));
 
-    auto commandGraph = vsg::createCommandGraphForView(windowAdapter, camera, vsg_scene);
+    auto commandGraph = vsg::createCommandGraphForView(window, camera, vsg_scene);
     viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
 
     viewer->compile();
@@ -92,8 +86,7 @@ void wxViewerWindow::initialize(uint32_t width, uint32_t height) {
 }
 
 void wxViewerWindow::paintEvent(wxPaintEvent &evt) {
-    wxPaintDC dc(this);
-    render(dc);
+    paintNow();
 }
 
 void wxViewerWindow::paintNow() {
@@ -116,29 +109,29 @@ void wxViewerWindow::onMouseEvents(wxMouseEvent &event) {
     auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
 
     if (event.Dragging()) {
-        windowAdapter->bufferedEvents.push_back(vsg::MoveEvent::create(windowAdapter,
-                                                                       event_time, event.m_x, event.m_y, mask));
+        window->bufferedEvents.push_back(vsg::MoveEvent::create(window,
+                                                                event_time, event.m_x, event.m_y, mask));
     }
 
     if (event.LeftDown()) {
-        windowAdapter->bufferedEvents.push_back(vsg::ButtonPressEvent::create(windowAdapter,
-                                                                              event_time, event.m_x, event.m_y,
-                                                                              mask,
-                                                                              1));
+        window->bufferedEvents.push_back(vsg::ButtonPressEvent::create(window,
+                                                                       event_time, event.m_x, event.m_y,
+                                                                       mask,
+                                                                       1));
     }
 
     if (event.LeftUp()) {
-        windowAdapter->bufferedEvents.push_back(vsg::ButtonReleaseEvent::create(windowAdapter,
-                                                                                event_time, event.m_x, event.m_y,
-                                                                                mask,
-                                                                                1));
+        window->bufferedEvents.push_back(vsg::ButtonReleaseEvent::create(window,
+                                                                         event_time, event.m_x, event.m_y,
+                                                                         mask,
+                                                                         1));
     }
 
     if (event.GetWheelDelta() > 0) {
-        windowAdapter->bufferedEvents.push_back(vsg::ScrollWheelEvent::create(windowAdapter, event_time,
-                                                                              event.GetWheelRotation() < 0 ? vsg::vec3(
-                                                                                      0.0f, -1.0f, 0.0f) : vsg::vec3(
-                                                                                      0.0f, 1.0f, 0.0f)));
+        window->bufferedEvents.push_back(vsg::ScrollWheelEvent::create(window, event_time,
+                                                                       event.GetWheelRotation() < 0 ? vsg::vec3(
+                                                                               0.0f, -1.0f, 0.0f) : vsg::vec3(
+                                                                               0.0f, 1.0f, 0.0f)));
     }
 }
 
@@ -198,7 +191,7 @@ MyFrame::MyFrame(const wxString &title) : wxFrame(NULL, wxID_ANY, title) {
     SetSize(1024, 768);
 }
 
-void MyFrame::OnQuit(wxCommandEvent & WXUNUSED(event)) {
+void MyFrame::OnQuit(wxCommandEvent &WXUNUSED(event)) {
     Close(true);
 }
 
