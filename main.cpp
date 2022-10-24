@@ -5,13 +5,13 @@
 #include <gtk-3.0/gtk/gtkx.h>
 #include <xcb/xcb.h>
 
-class wxViewerWindow : public wxPanel {
+class wxViewerWindow : public wxWindow {
 public:
     wxViewerWindow(wxWindow *parent);
 
     virtual ~wxViewerWindow();
 
-    void intialize(uint32_t width, uint32_t height);
+    void initialize(uint32_t width, uint32_t height);
 
     void paintEvent(wxPaintEvent &evt);
 
@@ -19,23 +19,30 @@ public:
 
     void render(wxDC &dc);
 
+    void onMouseEvents(wxMouseEvent &event);
+
     vsg::ref_ptr<vsg::WindowTraits> traits;
     vsg::ref_ptr<vsg::Instance> instance;
     vsg::ref_ptr<vsg::Viewer> viewer;
     vsg::ref_ptr<vsg::Window> windowAdapter;
 
-    DECLARE_EVENT_TABLE()
+wxDECLARE_EVENT_TABLE();
 
 private:
     bool _initialized = false;
 };
 
-wxViewerWindow::wxViewerWindow(wxWindow *parent) : wxPanel(parent, wxID_ANY) {
+BEGIN_EVENT_TABLE(wxViewerWindow, wxWindow)
+                EVT_MOUSE_EVENTS(wxViewerWindow::onMouseEvents)
+                EVT_PAINT(wxViewerWindow::paintEvent)
+END_EVENT_TABLE()
+
+wxViewerWindow::wxViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY) {
 }
 
 wxViewerWindow::~wxViewerWindow() noexcept {}
 
-void wxViewerWindow::intialize(uint32_t width, uint32_t height) {
+void wxViewerWindow::initialize(uint32_t width, uint32_t height) {
     _initialized = true;
 
     auto widget = GetHandle();
@@ -56,9 +63,6 @@ void wxViewerWindow::intialize(uint32_t width, uint32_t height) {
 
     auto vsg_scene = vsg::read_cast<vsg::Node>("../models/glider.vsgt");
     if (!vsg_scene) {
-        std::cout << "Failed to load a valid scenene graph, Please specify a 3d "
-                     "model or image file on the command line."
-                  << std::endl;
         return;
     }
 
@@ -76,20 +80,23 @@ void wxViewerWindow::intialize(uint32_t width, uint32_t height) {
 
     auto camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(windowAdapter->extent2D()));
 
+    vsg::ref_ptr<vsg::EllipsoidModel> ellipsoidModel(vsg_scene->getObject<vsg::EllipsoidModel>("EllipsoidModel"));
+    viewer->addEventHandler(vsg::Trackball::create(camera, ellipsoidModel));
+
     auto commandGraph = vsg::createCommandGraphForView(windowAdapter, camera, vsg_scene);
     viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
 
     viewer->compile();
+
+    paintNow();
 }
 
-void wxViewerWindow::paintEvent(wxPaintEvent& evt)
-{
+void wxViewerWindow::paintEvent(wxPaintEvent &evt) {
     wxPaintDC dc(this);
     render(dc);
 }
 
-void wxViewerWindow::paintNow()
-{
+void wxViewerWindow::paintNow() {
     wxClientDC dc(this);
     render(dc);
 }
@@ -103,6 +110,38 @@ void wxViewerWindow::render(wxDC &dc) {
     }
 }
 
+void wxViewerWindow::onMouseEvents(wxMouseEvent &event) {
+    vsg::clock::time_point event_time = vsg::clock::now();
+
+    auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
+
+    if (event.Dragging()) {
+        windowAdapter->bufferedEvents.push_back(vsg::MoveEvent::create(windowAdapter,
+                                                                       event_time, event.m_x, event.m_y, mask));
+    }
+
+    if (event.LeftDown()) {
+        windowAdapter->bufferedEvents.push_back(vsg::ButtonPressEvent::create(windowAdapter,
+                                                                              event_time, event.m_x, event.m_y,
+                                                                              mask,
+                                                                              1));
+    }
+
+    if (event.LeftUp()) {
+        windowAdapter->bufferedEvents.push_back(vsg::ButtonReleaseEvent::create(windowAdapter,
+                                                                                event_time, event.m_x, event.m_y,
+                                                                                mask,
+                                                                                1));
+    }
+
+    if (event.GetWheelDelta() > 0) {
+        windowAdapter->bufferedEvents.push_back(vsg::ScrollWheelEvent::create(windowAdapter, event_time,
+                                                                              event.GetWheelRotation() < 0 ? vsg::vec3(
+                                                                                      0.0f, -1.0f, 0.0f) : vsg::vec3(
+                                                                                      0.0f, 1.0f, 0.0f)));
+    }
+}
+
 class MyApp : public wxApp {
 public:
     virtual bool OnInit() wxOVERRIDE;
@@ -110,10 +149,6 @@ public:
     void onIdle(wxIdleEvent &evt);
 
     wxViewerWindow *wxViewer;
-
-    void activateRenderLoop(bool on);
-
-    bool render_loop_on;
 };
 
 class MyFrame : public wxFrame {
@@ -140,33 +175,16 @@ bool MyApp::OnInit() {
     frame->Show(true);
 
     wxViewer = new wxViewerWindow(frame);
-    wxViewer->intialize(frame->m_width, frame->m_height);
+    wxViewer->initialize(frame->m_width, frame->m_height);
 
-    activateRenderLoop(true);
+    Connect(wxID_ANY, wxEVT_IDLE, wxIdleEventHandler(MyApp::onIdle));
 
     return true;
 }
 
-void MyApp::activateRenderLoop(bool on) {
-    if (on && !render_loop_on) {
-        Connect(wxID_ANY, wxEVT_IDLE, wxIdleEventHandler(MyApp::onIdle));
-        render_loop_on = true;
-    } else if (!on && render_loop_on) {
-        Disconnect(wxEVT_IDLE, wxIdleEventHandler(MyApp::onIdle));
-        render_loop_on = false;
-    }
-}
-
 void MyApp::onIdle(wxIdleEvent &evt) {
-    if (render_loop_on) {
-        wxViewer->paintNow();
-        evt.RequestMore(); // render continuously, not only once on idle
-    }
+    wxViewer->paintNow();
 }
-
-BEGIN_EVENT_TABLE(wxViewerWindow, wxPanel)
-                EVT_PAINT(wxViewerWindow::paintEvent)
-END_EVENT_TABLE()
 
 MyFrame::MyFrame(const wxString &title) : wxFrame(NULL, wxID_ANY, title) {
     wxMenu *fileMenu = new wxMenu;
@@ -176,6 +194,8 @@ MyFrame::MyFrame(const wxString &title) : wxFrame(NULL, wxID_ANY, title) {
     menuBar->Append(fileMenu, "&File");
 
     SetMenuBar(menuBar);
+
+    SetSize(1024, 768);
 }
 
 void MyFrame::OnQuit(wxCommandEvent & WXUNUSED(event)) {
