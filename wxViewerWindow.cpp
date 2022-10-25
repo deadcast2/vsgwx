@@ -11,7 +11,14 @@ END_EVENT_TABLE()
 wxViewerWindow::wxViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY) {
 }
 
-wxViewerWindow::~wxViewerWindow() noexcept {}
+wxViewerWindow::~wxViewerWindow() {
+    if (window) {
+        window->releaseWindow();
+    }
+
+    window = {};
+    viewer = {};
+}
 
 void wxViewerWindow::initialize(uint32_t width, uint32_t height) {
     auto gtkWidget = GetHandle();
