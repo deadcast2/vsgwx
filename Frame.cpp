@@ -10,7 +10,7 @@ Frame::Frame(const wxString &title) : wxFrame(NULL, wxID_ANY, title) {
     SetMenuBar(menuBar);
 
     CreateStatusBar();
-    SetStatusText("Welcome to wxWidgets!");
+    SetStatusText("Welcome to the VSG wxWidgets example!");
 
     SetSize(1024, 768);
     Center();
