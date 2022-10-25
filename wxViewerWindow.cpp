@@ -3,12 +3,12 @@
 #include <gtk-3.0/gtk/gtkx.h>
 #include <xcb/xcb.h>
 
-BEGIN_EVENT_TABLE(wxViewerWindow, wxWindow)
-                EVT_MOUSE_EVENTS(wxViewerWindow::onMouseEvents)
-                EVT_PAINT(wxViewerWindow::paintEvent)
-END_EVENT_TABLE()
-
 wxViewerWindow::wxViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY) {
+    Connect(wxEVT_PAINT, wxPaintEventHandler(wxViewerWindow::OnPaintEvent));
+    Connect(wxEVT_MOTION, wxMouseEventHandler(wxViewerWindow::OnMouseMotion));
+    Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxViewerWindow::OnMouseDown));
+    Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxViewerWindow::OnMouseUp));
+    Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxViewerWindow::OnMouseWheel));
 }
 
 wxViewerWindow::~wxViewerWindow() {
@@ -20,7 +20,7 @@ wxViewerWindow::~wxViewerWindow() {
     viewer = {};
 }
 
-void wxViewerWindow::initialize(uint32_t width, uint32_t height) {
+void wxViewerWindow::Initialize(uint32_t width, uint32_t height) {
     auto gtkWidget = GetHandle();
 
     gtk_widget_realize(gtkWidget);
@@ -64,19 +64,19 @@ void wxViewerWindow::initialize(uint32_t width, uint32_t height) {
 
     viewer->compile();
 
-    paintNow();
+    PaintNow();
 }
 
-void wxViewerWindow::paintEvent(wxPaintEvent &evt) {
-    paintNow();
+void wxViewerWindow::OnPaintEvent(wxPaintEvent &evt) {
+    PaintNow();
 }
 
-void wxViewerWindow::paintNow() {
+void wxViewerWindow::PaintNow() {
     wxClientDC dc(this);
-    render(dc);
+    Render(dc);
 }
 
-void wxViewerWindow::render(wxDC &dc) {
+void wxViewerWindow::Render(wxDC &dc) {
     if (viewer->advanceToNextFrame()) {
         viewer->handleEvents();
         viewer->update();
@@ -85,7 +85,7 @@ void wxViewerWindow::render(wxDC &dc) {
     }
 }
 
-void wxViewerWindow::onMouseEvents(wxMouseEvent &event) {
+void wxViewerWindow::OnMouseMotion(wxMouseEvent &event) {
     vsg::clock::time_point event_time = vsg::clock::now();
 
     auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
@@ -94,6 +94,12 @@ void wxViewerWindow::onMouseEvents(wxMouseEvent &event) {
         window->bufferedEvents.push_back(vsg::MoveEvent::create(window,
                                                                 event_time, event.m_x, event.m_y, mask));
     }
+}
+
+void wxViewerWindow::OnMouseDown(wxMouseEvent &event) {
+    vsg::clock::time_point event_time = vsg::clock::now();
+
+    auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
 
     if (event.LeftDown()) {
         window->bufferedEvents.push_back(vsg::ButtonPressEvent::create(window,
@@ -101,6 +107,12 @@ void wxViewerWindow::onMouseEvents(wxMouseEvent &event) {
                                                                        mask,
                                                                        1));
     }
+}
+
+void wxViewerWindow::OnMouseUp(wxMouseEvent &event) {
+    vsg::clock::time_point event_time = vsg::clock::now();
+
+    auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
 
     if (event.LeftUp()) {
         window->bufferedEvents.push_back(vsg::ButtonReleaseEvent::create(window,
@@ -108,6 +120,10 @@ void wxViewerWindow::onMouseEvents(wxMouseEvent &event) {
                                                                          mask,
                                                                          1));
     }
+}
+
+void wxViewerWindow::OnMouseWheel(wxMouseEvent &event) {
+    vsg::clock::time_point event_time = vsg::clock::now();
 
     if (event.GetWheelDelta() > 0) {
         window->bufferedEvents.push_back(vsg::ScrollWheelEvent::create(window, event_time,

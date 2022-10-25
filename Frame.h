@@ -8,9 +8,6 @@ public:
     Frame(const wxString &title);
 
     void OnQuit(wxCommandEvent &event);
-
-private:
-    wxDECLARE_EVENT_TABLE();
 };
 
 #endif

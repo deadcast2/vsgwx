@@ -1,6 +1,8 @@
 #include "Application.h"
 #include "Frame.h"
 
+wxIMPLEMENT_APP_NO_MAIN(Application);
+
 bool Application::OnInit() {
     if (!wxApp::OnInit())
         return false;
@@ -9,7 +11,7 @@ bool Application::OnInit() {
     frame->Show(true);
 
     wxViewer = new wxViewerWindow(frame);
-    wxViewer->initialize(frame->m_width, frame->m_height);
+    wxViewer->Initialize(frame->m_width, frame->m_height);
 
     Connect(wxID_ANY, wxEVT_IDLE, wxIdleEventHandler(Application::OnIdle));
 
@@ -17,7 +19,5 @@ bool Application::OnInit() {
 }
 
 void Application::OnIdle(wxIdleEvent &evt) {
-    wxViewer->paintNow();
+    wxViewer->PaintNow();
 }
-
-wxIMPLEMENT_APP_NO_MAIN(Application);

@@ -10,22 +10,26 @@ public:
 
     virtual ~wxViewerWindow();
 
-    void initialize(uint32_t width, uint32_t height);
+    void Initialize(uint32_t width, uint32_t height);
 
-    void paintEvent(wxPaintEvent &evt);
+    void OnPaintEvent(wxPaintEvent &evt);
 
-    void paintNow();
+    void PaintNow();
 
-    void render(wxDC &dc);
+    void Render(wxDC &dc);
 
-    void onMouseEvents(wxMouseEvent &event);
+    void OnMouseWheel(wxMouseEvent &event);
+
+    void OnMouseMotion(wxMouseEvent &event);
+
+    void OnMouseDown(wxMouseEvent &event);
+
+    void OnMouseUp(wxMouseEvent &event);
 
 private:
     vsg::ref_ptr<vsg::WindowTraits> traits;
     vsg::ref_ptr<vsg::Viewer> viewer;
     vsg::ref_ptr<vsg::Window> window;
-
-    wxDECLARE_EVENT_TABLE();
 };
 
 #endif
