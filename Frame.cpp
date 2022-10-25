@@ -8,6 +8,10 @@ Frame::Frame(const wxString &title) : wxFrame(NULL, wxID_ANY, title) {
     menuBar->Append(fileMenu, "&File");
 
     SetMenuBar(menuBar);
+
+    CreateStatusBar();
+    SetStatusText("Welcome to wxWidgets!");
+
     SetSize(1024, 768);
     Center();
 

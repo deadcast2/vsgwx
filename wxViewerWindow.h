@@ -18,13 +18,18 @@ public:
 
     void Render(wxDC &dc);
 
-    void OnMouseWheel(wxMouseEvent &event);
+    void OnMouseWheel(wxMouseEvent &e);
 
-    void OnMouseMotion(wxMouseEvent &event);
+    void OnMouseMotion(wxMouseEvent &e);
 
-    void OnMouseDown(wxMouseEvent &event);
+    void OnMouseDown(wxMouseEvent &e);
 
-    void OnMouseUp(wxMouseEvent &event);
+    void OnMouseUp(wxMouseEvent &e);
+
+    void OnSizing(wxSizeEvent &e);
+
+protected:
+    std::pair<vsg::ButtonMask, uint32_t> ConvertMouseButtons(wxMouseEvent &e) const;
 
 private:
     vsg::ref_ptr<vsg::WindowTraits> traits;

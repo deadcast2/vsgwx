@@ -7,8 +7,13 @@ wxViewerWindow::wxViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY) {
     Connect(wxEVT_PAINT, wxPaintEventHandler(wxViewerWindow::OnPaintEvent));
     Connect(wxEVT_MOTION, wxMouseEventHandler(wxViewerWindow::OnMouseMotion));
     Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxViewerWindow::OnMouseDown));
+    Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxViewerWindow::OnMouseDown));
+    Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxViewerWindow::OnMouseDown));
     Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxViewerWindow::OnMouseUp));
+    Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxViewerWindow::OnMouseUp));
+    Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxViewerWindow::OnMouseUp));
     Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxViewerWindow::OnMouseWheel));
+    Connect(wxEVT_SIZE, wxSizeEventHandler(wxViewerWindow::OnSizing));
 }
 
 wxViewerWindow::~wxViewerWindow() {
@@ -39,6 +44,7 @@ void wxViewerWindow::Initialize(uint32_t width, uint32_t height) {
 
     auto vsg_scene = vsg::read_cast<vsg::Node>("../models/glider.vsgt");
     if (!vsg_scene) {
+        wxPrintf("Unable to load test model!\n");
         return;
     }
 
@@ -85,50 +91,73 @@ void wxViewerWindow::Render(wxDC &dc) {
     }
 }
 
-void wxViewerWindow::OnMouseMotion(wxMouseEvent &event) {
+void wxViewerWindow::OnMouseMotion(wxMouseEvent &e) {
     vsg::clock::time_point event_time = vsg::clock::now();
 
-    auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
+    auto [mask, button] = ConvertMouseButtons(e);
 
-    if (event.Dragging()) {
-        window->bufferedEvents.push_back(vsg::MoveEvent::create(window,
-                                                                event_time, event.m_x, event.m_y, mask));
-    }
+    window->bufferedEvents.push_back(vsg::MoveEvent::create(window,
+                                                            event_time, e.m_x, e.m_y, mask));
 }
 
-void wxViewerWindow::OnMouseDown(wxMouseEvent &event) {
+void wxViewerWindow::OnMouseDown(wxMouseEvent &e) {
     vsg::clock::time_point event_time = vsg::clock::now();
 
-    auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
+    auto [mask, button] = ConvertMouseButtons(e);
 
-    if (event.LeftDown()) {
-        window->bufferedEvents.push_back(vsg::ButtonPressEvent::create(window,
-                                                                       event_time, event.m_x, event.m_y,
-                                                                       mask,
-                                                                       1));
-    }
+    window->bufferedEvents.push_back(vsg::ButtonPressEvent::create(window,
+                                                                   event_time, e.m_x, e.m_y,
+                                                                   mask,
+                                                                   button));
 }
 
-void wxViewerWindow::OnMouseUp(wxMouseEvent &event) {
+void wxViewerWindow::OnMouseUp(wxMouseEvent &e) {
     vsg::clock::time_point event_time = vsg::clock::now();
 
-    auto mask = static_cast<vsg::ButtonMask>(vsg::BUTTON_MASK_1);
+    auto [mask, button] = ConvertMouseButtons(e);
 
-    if (event.LeftUp()) {
-        window->bufferedEvents.push_back(vsg::ButtonReleaseEvent::create(window,
-                                                                         event_time, event.m_x, event.m_y,
-                                                                         mask,
-                                                                         1));
-    }
+    window->bufferedEvents.push_back(vsg::ButtonReleaseEvent::create(window,
+                                                                     event_time, e.m_x, e.m_y,
+                                                                     mask,
+                                                                     button));
 }
 
 void wxViewerWindow::OnMouseWheel(wxMouseEvent &event) {
     vsg::clock::time_point event_time = vsg::clock::now();
 
-    if (event.GetWheelDelta() > 0) {
-        window->bufferedEvents.push_back(vsg::ScrollWheelEvent::create(window, event_time,
-                                                                       event.GetWheelRotation() < 0 ? vsg::vec3(
-                                                                               0.0f, -1.0f, 0.0f) : vsg::vec3(
-                                                                               0.0f, 1.0f, 0.0f)));
+    window->bufferedEvents.push_back(vsg::ScrollWheelEvent::create(window, event_time,
+                                                                   event.GetWheelRotation() < 0 ? vsg::vec3(
+                                                                           0.0f, -1.0f, 0.0f) : vsg::vec3(
+                                                                           0.0f, 1.0f, 0.0f)));
+}
+
+void wxViewerWindow::OnSizing(wxSizeEvent &e) {
+    vsg::clock::time_point event_time = vsg::clock::now();
+
+    window->bufferedEvents.push_back(vsg::ConfigureWindowEvent::create(window, event_time, e.GetRect().GetPosition().x,
+                                                                       e.GetRect().GetPosition().y,
+                                                                       static_cast<uint32_t>(e.GetSize().GetWidth()),
+                                                                       static_cast<uint32_t>(e.GetSize().GetHeight())));
+}
+
+std::pair<vsg::ButtonMask, uint32_t> wxViewerWindow::ConvertMouseButtons(wxMouseEvent &e) const {
+    uint16_t mask{0};
+    uint32_t button = 0;
+
+    if (e.LeftIsDown()) {
+        mask = mask | vsg::BUTTON_MASK_1;
+        button = 1;
     }
+
+    if (e.MiddleIsDown()) {
+        mask = mask | vsg::BUTTON_MASK_2;
+        button = 3;
+    }
+
+    if (e.RightIsDown()) {
+        mask = mask | vsg::BUTTON_MASK_3;
+        button = 2;
+    }
+
+    return {static_cast<vsg::ButtonMask>(mask), button};
 }
