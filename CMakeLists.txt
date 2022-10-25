@@ -18,7 +18,7 @@ find_package(vsg 0.4.0 REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(SOURCES main.cpp)
+set(SOURCES main.cpp wxViewerWindow.cpp wxViewerWindow.h Application.cpp Application.h Frame.cpp Frame.h)
 
 add_executable(vsgwx ${SOURCES})
 
