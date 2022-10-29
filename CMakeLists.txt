@@ -8,11 +8,13 @@ project(vsgwx
 find_package(wxWidgets REQUIRED COMPONENTS net core base)
 include(${wxWidgets_USE_FILE})
 
+if(LINUX)
 FIND_PACKAGE(PkgConfig REQUIRED)
 PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
 
 INCLUDE_DIRECTORIES(${GTK3_INCLUDE_DIRS})
 LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
+endif()
 
 find_package(vsg 0.4.0 REQUIRED)
 
@@ -22,4 +24,8 @@ set(SOURCES main.cpp wxViewerWindow.cpp wxViewerWindow.h Application.cpp Applica
 
 add_executable(vsgwx ${SOURCES})
 
+if(LINUX)
 target_link_libraries(vsgwx vsg::vsg ${wxWidgets_LIBRARIES} ${GTK3_LIBRARIES})
+else()
+target_link_libraries(vsgwx vsg::vsg ${wxWidgets_LIBRARIES})
+endif()

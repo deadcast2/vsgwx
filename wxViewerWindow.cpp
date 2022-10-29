@@ -1,10 +1,12 @@
 #include "wxViewerWindow.h"
+
+#ifdef __LINUX__
 #include <gtk-3.0/gtk/gtk.h>
 #include <gtk-3.0/gtk/gtkx.h>
 #include <xcb/xcb.h>
+#endif
 
 wxViewerWindow::wxViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY) {
-    Connect(wxEVT_PAINT, wxPaintEventHandler(wxViewerWindow::OnPaintEvent));
     Connect(wxEVT_MOTION, wxMouseEventHandler(wxViewerWindow::OnMouseMotion));
     Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxViewerWindow::OnMouseDown));
     Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxViewerWindow::OnMouseDown));
@@ -26,15 +28,22 @@ wxViewerWindow::~wxViewerWindow() {
 }
 
 void wxViewerWindow::Initialize(uint32_t width, uint32_t height) {
+#ifdef __LINUX__
     auto gtkWidget = GetHandle();
-
     gtk_widget_realize(gtkWidget);
 
     auto gtkWindow = gtk_widget_get_window(gtkWidget);
     auto native = gdk_x11_window_get_xid(gtkWindow);
+#endif
 
     traits = vsg::WindowTraits::create();
+
+#ifdef __LINUX__
     traits->nativeWindow = static_cast<xcb_window_t>(native);
+#elif _WIN64
+    traits->nativeWindow = reinterpret_cast<HWND>(GetHandle());
+#endif
+
     traits->width = width;
     traits->height = height;
 
@@ -42,7 +51,7 @@ void wxViewerWindow::Initialize(uint32_t width, uint32_t height) {
     viewer = vsg::Viewer::create();
     viewer->addWindow(window);
 
-    auto vsg_scene = vsg::read_cast<vsg::Node>("../models/lz.vsgt");
+    auto vsg_scene = vsg::read_cast<vsg::Node>("..\\models\\lz.vsgt");
     if (!vsg_scene) {
         wxPrintf("Unable to load test model!\n");
         return;
@@ -70,10 +79,6 @@ void wxViewerWindow::Initialize(uint32_t width, uint32_t height) {
 
     viewer->compile();
 
-    PaintNow();
-}
-
-void wxViewerWindow::OnPaintEvent(wxPaintEvent &evt) {
     PaintNow();
 }
 

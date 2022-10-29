@@ -12,8 +12,6 @@ public:
 
     void Initialize(uint32_t width, uint32_t height);
 
-    void OnPaintEvent(wxPaintEvent &evt);
-
     void PaintNow();
 
     void Render(wxDC &dc);

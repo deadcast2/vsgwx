@@ -11,7 +11,7 @@ bool Application::OnInit() {
     frame->Show(true);
 
     wxViewer = new wxViewerWindow(frame);
-    wxViewer->Initialize(frame->m_width, frame->m_height);
+    wxViewer->Initialize(frame->GetSize().GetWidth(), frame->GetSize().GetHeight());
 
     Connect(wxID_ANY, wxEVT_IDLE, wxIdleEventHandler(Application::OnIdle));
 
