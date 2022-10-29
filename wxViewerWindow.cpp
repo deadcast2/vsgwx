@@ -51,7 +51,12 @@ void wxViewerWindow::Initialize(uint32_t width, uint32_t height) {
     viewer = vsg::Viewer::create();
     viewer->addWindow(window);
 
+#ifdef __LINUX__
+    auto vsg_scene = vsg::read_cast<vsg::Node>("../models/lz.vsgt");
+#elif _WIN64
     auto vsg_scene = vsg::read_cast<vsg::Node>("..\\models\\lz.vsgt");
+#endif
+
     if (!vsg_scene) {
         wxPrintf("Unable to load test model!\n");
         return;
