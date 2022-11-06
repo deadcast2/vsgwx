@@ -1,7 +1,7 @@
 #ifndef VSGWX_APPLICATION_H
 #define VSGWX_APPLICATION_H
 
-#include "wxViewerWindow.h"
+#include "ViewerWindow.h"
 
 class Application : public wxApp {
 public:
@@ -10,7 +10,7 @@ public:
     void OnIdle(wxIdleEvent &evt);
 
 private:
-    wxViewerWindow *wxViewer;
+    vsgwx::ViewerWindow *viewerWindow;
 };
 
 #endif
