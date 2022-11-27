@@ -10,7 +10,8 @@
 
 using namespace vsgwx;
 
-ViewerWindow::ViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY) {
+ViewerWindow::ViewerWindow(wxWindow *parent) : wxWindow(parent, wxID_ANY, wxDefaultPosition,
+                                                        wxSize(parent->GetSize())) {
     Connect(wxEVT_MOTION, wxMouseEventHandler(ViewerWindow::OnMouseMotion));
     Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(ViewerWindow::OnMouseDown));
     Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(ViewerWindow::OnMouseDown));
