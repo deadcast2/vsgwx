@@ -1,4 +1,4 @@
-#include "../../include/vsgwx/ViewerWindow.h"
+#include <vsgwx/ViewerWindow.h>
 
 #ifdef __LINUX__
 
