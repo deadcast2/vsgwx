@@ -1,27 +1,28 @@
 #pragma once
 
-#include "wx/wx.h"
+#include <wx/wx.h>
 #include <vsg/all.h>
+#include <vsgwx/Export.h>
 
 namespace vsgwx {
 
-    class ViewerWindow : public wxWindow {
+    class VSGWX_DECLSPEC ViewerWindow : public wxWindow {
     public:
         ViewerWindow(wxWindow *parent);
 
         virtual ~ViewerWindow();
 
-        using InitializeCallback = std::function<void(ViewerWindow&, uint32_t width, uint32_t height)>;
+        using InitializeCallback = std::function<void(ViewerWindow &, uint32_t width, uint32_t height)>;
         InitializeCallback initializeCallback;
 
-        using FrameCallback = std::function<bool(ViewerWindow&)>;
+        using FrameCallback = std::function<bool(ViewerWindow &)>;
         FrameCallback frameCallback;
 
         void Initialize(uint32_t width, uint32_t height);
 
         void PaintNow();
 
-        void Render(wxDC &dc);
+        void Render();
 
         void OnMouseWheel(wxMouseEvent &e);
 

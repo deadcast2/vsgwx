@@ -1,12 +1,13 @@
 #include "Application.h"
 #include "Frame.h"
 
-wxIMPLEMENT_APP_NO_MAIN(Application);
+#ifdef vsgXchange_FOUND
+#include <vsgXchange/all.h>
+#endif
+
+wxIMPLEMENT_APP(Application);
 
 bool Application::OnInit() {
-    if (!wxApp::OnInit())
-        return false;
-
     Frame *frame = new Frame("vsgwx");
     frame->Show(true);
 
@@ -14,18 +15,47 @@ bool Application::OnInit() {
 
     viewerWindow = new vsgwx::ViewerWindow(frame);
 
-    viewerWindow->initializeCallback = [&](vsgwx::ViewerWindow &vw, uint32_t width, uint32_t height) {
-#ifdef __LINUX__
-        auto vsg_scene = vsg::read_cast<vsg::Node>("../models/lz.vsgt");
-#elif _WIN64
-        auto vsg_scene = vsg::read_cast<vsg::Node>("..\\models\\lz.vsgt");
+    vsg::CommandLine arguments(&argc, argv);
+
+    // set up vsg::Options to pass in file paths and ReaderWriter's and other IO
+    // related options to use when reading and writing files.
+    auto options = vsg::Options::create();
+    options->fileCache = vsg::getEnv("VSG_FILE_CACHE");
+    options->paths = vsg::getEnvPaths("VSG_FILE_PATH");
+
+#ifdef vsgXchange_all
+    // add vsgXchange's support for reading and writing 3rd party file formats
+    options->add(vsgXchange::all::create());
 #endif
 
-        if (!vsg_scene) {
-            wxPrintf("Unable to load test model!\n");
-            return false;
-        }
+    arguments.read(options);
 
+    viewerWindow->traits->windowTitle = "vsgwx viewer";
+    viewerWindow->traits->debugLayer = arguments.read({"--debug", "-d"});
+    viewerWindow->traits->apiDumpLayer = arguments.read({"--api", "-a"});
+
+    if (arguments.errors())
+        return arguments.writeErrorMessages(std::cerr);
+
+    if (argc <= 1)
+    {
+        std::cout << "Please specify a 3d model or image file on the command line."
+                  << std::endl;
+        return false;
+    }
+
+    vsg::Path filename = arguments[1];
+
+    auto vsg_scene = vsg::read_cast<vsg::Node>(filename, options);
+    if (!vsg_scene)
+    {
+        std::cout << "Failed to load a valid scene graph, Please specify a 3d "
+                     "model or image file on the command line."
+                  << std::endl;
+        return false;
+    }
+
+    viewerWindow->initializeCallback = [&](vsgwx::ViewerWindow &vw, uint32_t width, uint32_t height) {
         vsg::ComputeBounds computeBounds;
         vsg_scene->accept(computeBounds);
         vsg::dvec3 centre = (computeBounds.bounds.min + computeBounds.bounds.max) * 0.5;
@@ -73,6 +103,6 @@ bool Application::OnInit() {
     return true;
 }
 
-void Application::OnIdle(wxIdleEvent &evt) {
+void Application::OnIdle(wxIdleEvent &WXUNUSED(evt)) {
     viewerWindow->PaintNow();
 }

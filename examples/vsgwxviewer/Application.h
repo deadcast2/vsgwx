@@ -1,7 +1,6 @@
-#ifndef VSGWX_APPLICATION_H
-#define VSGWX_APPLICATION_H
+#pragma once
 
-#include "ViewerWindow.h"
+#include <vsgwx/ViewerWindow.h>
 
 class Application : public wxApp {
 public:
@@ -12,5 +11,3 @@ public:
 private:
     vsgwx::ViewerWindow *viewerWindow;
 };
-
-#endif

@@ -1,31 +1,28 @@
 cmake_minimum_required(VERSION 3.7)
 
 project(vsgwx
-        VERSION 0.0.0
-        DESCRIPTION "wxWidgets with VSG"
+        VERSION 0.1.0
+        DESCRIPTION "wxWidgets integration with Vulkan Scene Graph"
         LANGUAGES CXX)
 
-find_package(wxWidgets REQUIRED COMPONENTS net core base)
-include(${wxWidgets_USE_FILE})
-
-if(UNIX AND NOT APPLE)
-FIND_PACKAGE(PkgConfig REQUIRED)
-PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
-
-INCLUDE_DIRECTORIES(${GTK3_INCLUDE_DIRS})
-LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
-endif()
-
 find_package(vsg 1.0.0 REQUIRED)
+find_package(vsgXchange) # only used by examples
+
+vsg_setup_dir_vars()
+vsg_setup_build_vars()
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SOURCES main.cpp ViewerWindow.cpp ViewerWindow.h Application.cpp Application.h Frame.cpp Frame.h)
+set(vsgwx_SOVERSION 0)
+set(vsgwx_RELEASE_CANDIDATE 0)
 
-add_executable(vsgwx ${SOURCES})
+set(VSGWX_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Root source directory of vsgwx")
+set(VSGWX_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" CACHE INTERNAL "Root binary directory of vsgwx")
 
-if(UNIX AND NOT APPLE)
-target_link_libraries(vsgwx vsg::vsg ${wxWidgets_LIBRARIES} ${GTK3_LIBRARIES})
-else()
-target_link_libraries(vsgwx vsg::vsg ${wxWidgets_LIBRARIES})
-endif()
+vsg_add_target_uninstall()
+
+add_subdirectory(src/vsgwx)
+add_subdirectory(examples)
+
+vsg_add_feature_summary()

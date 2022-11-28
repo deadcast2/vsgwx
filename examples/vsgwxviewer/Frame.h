@@ -1,7 +1,6 @@
-#ifndef VSGWX_FRAME_H
-#define VSGWX_FRAME_H
+#pragma once
 
-#include "wx/wx.h"
+#include <wx/wx.h>
 
 class Frame : public wxFrame {
 public:
@@ -9,5 +8,3 @@ public:
 
     void OnQuit(wxCommandEvent &event);
 };
-
-#endif

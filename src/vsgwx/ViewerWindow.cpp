@@ -1,4 +1,4 @@
-#include "ViewerWindow.h"
+#include "../../include/vsgwx/ViewerWindow.h"
 
 #ifdef __LINUX__
 
@@ -63,11 +63,10 @@ void ViewerWindow::Initialize(uint32_t width, uint32_t height) {
 }
 
 void ViewerWindow::PaintNow() {
-    wxClientDC dc(this);
-    Render(dc);
+    Render();
 }
 
-void ViewerWindow::Render(wxDC &dc) {
+void ViewerWindow::Render() {
     if (frameCallback) {
         frameCallback(*this);
     }
