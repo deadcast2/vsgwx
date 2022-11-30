@@ -9,7 +9,11 @@ set(HEADERS
 find_package(wxWidgets REQUIRED COMPONENTS net core base)
 include(${wxWidgets_USE_FILE})
 
-add_executable(vsgwxviewer ${MODE} ${SOURCES} ${HEADERS} ${FORMS})
+if(WIN32)
+    add_executable(vsgwxviewer WIN32 ${MODE} ${SOURCES} ${HEADERS} ${FORMS})
+else()
+    add_executable(vsgwxviewer ${MODE} ${SOURCES} ${HEADERS} ${FORMS})
+endif()
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(vsgwxviewer vsgwx ${wxWidgets_LIBRARIES} ${GTK3_LIBRARIES})
@@ -23,4 +27,3 @@ if (vsgXchange_FOUND)
 endif()
 
 install(TARGETS vsgwxviewer DESTINATION bin)
-
